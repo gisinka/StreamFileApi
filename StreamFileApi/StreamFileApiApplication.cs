@@ -23,6 +23,7 @@ public class StreamFileApiApplication : VostokAspNetCoreWebApplication
                 setup.LogRequestHeaders = true;
                 setup.LogResponseHeaders = true;
                 setup.LogResponseCompletion = true;
+                setup.LogQueryString = true;
             });
             builder.Services.Configure<FormOptions>(options =>
             {

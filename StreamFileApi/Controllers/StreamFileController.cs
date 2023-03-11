@@ -12,7 +12,7 @@ public class StreamFileController : ControllerBase
 {
     [HttpPost("hash")]
     [RequestSizeLimit(long.MaxValue)]
-    public async Task<IActionResult> GetHash()
+    public async Task<IActionResult> GetMultipartHash()
     {
         return Ok(await GetHashFromMultipart());
     }
@@ -21,10 +21,30 @@ public class StreamFileController : ControllerBase
     [RequestSizeLimit(long.MaxValue)]
     public async Task<IActionResult> GetHash([FromForm] HashRequest request)
     {
-        await using var bufferedStream = new BufferedStream(request.File.OpenReadStream());
+        await using var stream = request.File.OpenReadStream(); 
+        return Ok(new HashResponse
+        {
+            Filename = request.File.FileName, 
+            Hash = Convert.ToHexString(await GetStreamHash(stream))
+        });
+    }
+
+    [HttpPost("hashbody")]
+    [RequestSizeLimit(long.MaxValue)]
+    public async Task<IActionResult> GetBodyHash([FromQuery] string? filename)
+    {
+        await using var stream = new BufferedStream(Request.Body); 
+        return Ok(new HashResponse
+        {
+            Filename = filename ?? nameof(Request.Body), 
+            Hash = Convert.ToHexString(await GetStreamHash(stream))
+        });
+    }
+
+    private static async Task<byte[]> GetStreamHash(Stream bufferedStream)
+    {
         using var hasher = SHA1.Create();
-        var hash = await hasher.ComputeHashAsync(bufferedStream);
-        return Ok(new HashResponse {Filename = request.File.FileName, Hash = Convert.ToHexString(hash)});
+        return await hasher.ComputeHashAsync(bufferedStream);
     }
 
     private async Task<HashResponse> GetHashFromMultipart()
